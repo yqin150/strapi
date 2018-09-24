@@ -29,10 +29,22 @@ const makeSelectBlockApp = () => createSelector(
   (appState) => appState.get('blockApp'),
 );
 
+const makeSelectAppPlugins = () => createSelector(
+  selectApp(),
+  substate => substate.get('appPlugins').toJS(),
+);
+
+const makeSelectIsLoading = () => createSelector(
+  selectApp(),
+  substate => substate.get('isLoading'),
+);
+
 export {
   selectApp,
   selectHasUserPlugin,
   selectPlugins,
+  makeSelectAppPlugins,
   makeSelectBlockApp,
+  makeSelectIsLoading,
   makeSelectShowGlobalAppBlocker,
 };

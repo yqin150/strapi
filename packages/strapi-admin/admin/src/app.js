@@ -18,31 +18,21 @@ import createHistory from 'history/createBrowserHistory';
 import { merge, isFunction } from 'lodash';
 import 'sanitize.css/sanitize.css';
 import 'whatwg-fetch';
-
 import LanguageProvider from 'containers/LanguageProvider';
-
 import App from 'containers/App';
 import { showNotification } from 'containers/NotificationProvider/actions';
 import {
   freezeApp,
+  getAppPluginsSucceeded,
   pluginLoaded,
   unfreezeApp,
   unsetHasUserPlugin,
   updatePlugin,
 } from 'containers/App/actions';
-
 import auth from 'utils/auth';
 import configureStore from './store';
 import { translationMessages, languages } from './i18n';
 import { findIndex } from 'lodash';
-
-const plugins = (() => {
-  try {
-    return require('./config/plugins.json');
-  } catch (e) {
-    return [];
-  }
-})();
 /* eslint-enable */
 
 // Create redux store with history
@@ -51,6 +41,19 @@ const history = createHistory({
   basename,
 });
 const store = configureStore({}, history);
+const plugins = (() => {
+  try {
+    return require('./config/plugins.json');
+  } catch (e) {
+    return [];
+  }
+})();
+
+
+if (window.location.port === '4000') {
+  store.dispatch(getAppPluginsSucceeded(plugins));
+}
+
 
 const render = (translatedMessages) => {
   ReactDOM.render(
@@ -94,6 +97,8 @@ if (window.location.port !== '4000') {
       return response.json();
     })
     .then(plugins => {
+      store.dispatch(getAppPluginsSucceeded(plugins));
+
       if (findIndex(plugins, ['id', 'users-permissions']) === -1) {
         store.dispatch(unsetHasUserPlugin());
       }

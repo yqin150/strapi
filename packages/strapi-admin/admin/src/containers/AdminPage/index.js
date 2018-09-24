@@ -17,20 +17,18 @@ import { createStructuredSelector } from 'reselect';
 import { Switch, Route } from 'react-router-dom';
 import { get, includes, isFunction, map, omit } from 'lodash';
 import { compose } from 'redux';
-
 // Actions required for disabling and enabling the OverlayBlocker
 import { disableGlobalOverlayBlocker, enableGlobalOverlayBlocker } from 'actions/overlayBlocker';
-
 import { pluginLoaded, updatePlugin } from 'containers/App/actions';
 import {
+  makeSelectAppPlugins,
   makeSelectBlockApp,
+  makeSelectIsLoading,
   makeSelectShowGlobalAppBlocker,
   selectHasUserPlugin,
   selectPlugins,
 } from 'containers/App/selectors';
-
 import { hideNotification } from 'containers/NotificationProvider/actions';
-
 // Design
 import ComingSoonPage from 'containers/ComingSoonPage';
 import Content from 'containers/Content';
@@ -41,21 +39,19 @@ import HomePage from 'containers/HomePage/Loadable';
 import InstallPluginPage from 'containers/InstallPluginPage/Loadable';
 import LeftMenu from 'containers/LeftMenu';
 import ListPluginsPage from 'containers/ListPluginsPage/Loadable';
+import LoadingIndicatorPage from 'components/LoadingIndicatorPage';
 import Logout from 'components/Logout';
 import NotFoundPage from 'containers/NotFoundPage/Loadable';
 import OverlayBlocker from 'components/OverlayBlocker';
 import PluginPage from 'containers/PluginPage';
-
 // Utils
 import auth from 'utils/auth';
 import injectReducer from 'utils/injectReducer';
 import injectSaga from 'utils/injectSaga';
-
 import { getGaStatus, getLayout } from './actions';
 import reducer from './reducer';
 import saga from './saga';
 import selectAdminPage from './selectors';
-
 import styles from './styles.scss';
 
 const PLUGINS_TO_BLOCK_PRODUCTION = ['content-type-builder', 'settings-manager'];
@@ -97,6 +93,10 @@ export class AdminPage extends React.Component {
     if (!this.hasUserPluginLoaded(this.props) && this.hasUserPluginLoaded(nextProps)) {
       this.checkLogin(nextProps);
     }
+  }
+
+  checkIfAppHAsUSerPlugin = () => {
+    return this.props.appPlugins.indexOf('users-permissions') !== -1;
   }
 
   checkLogin = (props, skipAction = false) => {
@@ -181,12 +181,12 @@ export class AdminPage extends React.Component {
   };
 
   render() {
-    const { adminPage } = this.props;
+    const { adminPage, isAppLoading } = this.props;
     const header = this.showLeftMenu() ? <Header /> : '';
     const style = this.showLeftMenu() ? {} : { width: '100%' };
 
-    if (adminPage.isLoading) {
-      return <div />;
+    if (isAppLoading || adminPage.isLoading) {
+      return <LoadingIndicatorPage />;
     }
 
     return (
@@ -237,6 +237,7 @@ AdminPage.contextTypes = {
 AdminPage.defaultProps = {
   adminPage: {},
   hasUserPlugin: true,
+  isAppLoading: true,
 };
 
 AdminPage.propTypes = {
@@ -248,6 +249,7 @@ AdminPage.propTypes = {
   getLayout: PropTypes.func.isRequired,
   hasUserPlugin: PropTypes.bool,
   history: PropTypes.object.isRequired,
+  isAppLoading: PropTypes.bool,
   location: PropTypes.object.isRequired,
   pluginLoaded: PropTypes.func.isRequired,
   plugins: PropTypes.object.isRequired,
@@ -257,8 +259,10 @@ AdminPage.propTypes = {
 
 const mapStateToProps = createStructuredSelector({
   adminPage: selectAdminPage(),
+  appPlugins: makeSelectAppPlugins(),
   blockApp: makeSelectBlockApp(),
   hasUserPlugin: selectHasUserPlugin(),
+  isAppLoading: makeSelectIsLoading(),
   plugins: selectPlugins(),
   showGlobalAppBlocker: makeSelectShowGlobalAppBlocker(),
 });
